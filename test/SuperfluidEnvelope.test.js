@@ -35,7 +35,7 @@ before(async function () {
     console.log("Per second flow rate:", HUNDRED_PER_YEAR)
 
     // get hardhat accounts
-    ;[owner, alice, bob, eric, sunny, joel] = await ethers.getSigners()
+    ;[deployer, owner, alice, bob, eric, sunny, joel] = await ethers.getSigners()
 
     sfDeployer = await deployTestFramework();
 
@@ -100,12 +100,13 @@ describe("Envelope Contract", function () {
 
     beforeEach(async () => {
 
-      envelope = await envelopeFactory.connect(owner).deploy(
+      envelope = await envelopeFactory.connect(deployer).deploy(
         SECONDS_IN_YEAR,
         HUNDRED_PER_YEAR,  // 100 USDCx over month
         usdcx.address,
         [alice.address, bob.address, eric.address, sunny.address, joel.address],  // recipients
-        "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f"
+        "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f",
+        owner.address
       );
       await envelope.deployed()
 

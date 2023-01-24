@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-// Uncomment this line to use console.log
-import "hardhat/console.sol";
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -38,7 +35,8 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         int96 _flowRate,
         ISuperToken _rewardToken,
         address[] memory _streamRecipients,
-        string memory _metadata
+        string memory _metadata,
+        address _owner
     ) ERC721 (
         "Superfluid Lucky Red Envelope - 2023",
         "LRE23"
@@ -50,19 +48,12 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         rewardToken = _rewardToken;
         metadata = _metadata;
 
-        transferOwnership(msg.sender);
+        transferOwnership(_owner);
 
     }
 
+    /// @notice Return whether the contract has sufficient rewardToken
     function enoughDeposit() public view returns (bool) {
-
-        // get how many tokens are needed to stream to the receivers as flowRate * streamDuration * receivers.length
-        // return if there are that many tokens in the contract
-
-        // console.log("expected balance:");
-        // console.log( uint(int(flowRate)) * streamDuration * streamRecipients.length );
-        // console.log("reward token balance of envelope:");
-        // console.log( IERC20(rewardToken).balanceOf(address(this)) );
 
         return (
             rewardToken.balanceOf(address(this)) >=
@@ -72,29 +63,28 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         
     }
 
+    /// @notice mint NFTs to recipients and start streams to them
     function mint() external onlyOwner {
         
         if ( !enoughDeposit() ) revert NotEnoughDeposit();
         if ( mintTimestamp != 0 ) revert AlreadyMinted();
 
         for (uint i = 0; i < streamRecipients.length; i++) {
-            tokenIdCounter += 1;
 
-            // console.log("minted", tokenIdCounter);
+            tokenIdCounter += 1;
 
             _mint(streamRecipients[i], tokenIdCounter);
 
             rewardToken.createFlow(streamRecipients[i], flowRate);
 
-            // console.log("streaming to", streamRecipients[i]);
         }
 
         mintTimestamp = block.timestamp;
 
     }
 
+    /// @notice end streams to recipients
     function end() external onlyOwner {
-
 
         for (uint i = 0; i < streamRecipients.length; i++) {   
 
@@ -106,19 +96,11 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
         }
 
-        uint256 remainingStreamTime = ( mintTimestamp + streamDuration ) - block.timestamp;
+        if ( block.timestamp < (mintTimestamp + streamDuration) ) {
 
-        // separating out so that contract recovers buffer amounts and then executes remaining transfers
-        for (uint i = 0; i < streamRecipients.length; i++) {   
+            for ( uint i = 0; i < streamRecipients.length; i++ ) {
 
-            // if we haven't yet passed the end date, then we need to transfer what's left
-            // if a recipient cancels their own stream, they're out of luck. We only transfer
-            // the remaining until end of duration
-            if ( block.timestamp < mintTimestamp + streamDuration ) {
-
-                rewardToken.transfer(streamRecipients[i], remainingStreamTime * uint(int(flowRate)) );
-
-                // console.log("transferring in", remainingStreamTime * uint(int(flowRate)));
+                rewardToken.transfer(streamRecipients[i], ( ( mintTimestamp + streamDuration ) - block.timestamp ) * uint(int(flowRate)) );
 
             }
 
@@ -126,14 +108,14 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     }
 
+    /// @notice emergency withdrawal of rewardTokens
     function withdraw(uint256 amount) external onlyOwner {
 
         rewardToken.transfer(msg.sender, amount);
 
     } 
 
-
-
+    /// @notice NFTs are non-transferrable
     function _transfer(
         address from,
         address to,
@@ -144,6 +126,7 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     }
 
+    /// @notice All NFTs have same metadata
     function tokenURI(uint256)
         public
         view

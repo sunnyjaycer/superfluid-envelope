@@ -20,6 +20,8 @@ const recipients = [
 
 const metadata = "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f"
 
+const owner = "0xc41876DAB61De145093b6aA87417326B24Ae4ECD" // should be sunnyjaycer.eth for Polygon mainnet
+
 async function main() {
 
   // const owner = ethers.getSigner();
@@ -30,7 +32,8 @@ async function main() {
     HUNDRED_PER_MONTH,  // 100 USDCx over month
     goerliUsdcxAddress,
     recipients,
-    metadata
+    metadata,
+    owner
   );
 
   await envelope.deployed();

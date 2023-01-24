@@ -1,13 +1,7 @@
-# Sample Hardhat Project
+# Superfluid Envelope
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+Select recipients and mint NFTs to each one along with a fixed-duration Superfluid money stream.
 
-Try running some of the following tasks:
+[Remix Gist](https://remix.ethereum.org/?#gist=e2f5a2f81085c3d184748633863d5462&optimize=false&runs=200&evmVersion=null&version=soljson-v0.8.14+commit.80d49f37.js)
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+This is a Hardhat project.
