@@ -10,7 +10,6 @@ import { ISuperfluid } from "@superfluid-finance/ethereum-contracts/contracts/in
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ISuperApp } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperApp.sol";
 
-error NonTransferable();
 error NotEnoughDeposit();
 error AlreadyMinted();
 error OnePerHolder();
