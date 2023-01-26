@@ -35,7 +35,7 @@ before(async function () {
     console.log("Per second flow rate:", HUNDRED_PER_YEAR)
 
     // get hardhat accounts
-    ;[deployer, owner, alice, bob, eric, sunny, joel] = await ethers.getSigners()
+    ;[deployer, owner, alice, bob, eric, sunny, joel, mike, alex] = await ethers.getSigners()
 
     sfDeployer = await deployTestFramework();
 
@@ -97,6 +97,9 @@ before(async function () {
 })
 
 describe("Envelope Contract", function () {
+
+    /// Notice: with each test case, close out the streams with the end() function.
+    //          otherwise they persist and disrupt testing
 
     beforeEach(async () => {
 
@@ -257,28 +260,16 @@ describe("Envelope Contract", function () {
 
     });
 
-    it("NFTs are non-transferrable", async function () {
+    it("Streams are transferrable", async function () {
 
+        // can't stream to another holder
         await expect(
             envelope.connect(alice).transferFrom(alice.address, bob.address, 1)
-        ).to.be.revertedWithCustomError(envelope, "NonTransferable");
+        ).to.be.revertedWithCustomError(envelope, "OnePerHolder");
 
-        // close out streams
-        await envelope.connect(owner).end();
+        // transfer away - verify stream moved
+        await envelope.connect(alice).transferFrom(alice.address, mike.address, 1)
 
-    });
-
-    it("End streams 5 days before month duration", async function () {
-
-        await time.increaseTo( checkPoint + SECONDS_IN_YEAR - (SECONDS_IN_DAY*5) );
-
-        // end streams, also verify onlyOwner
-        await expect(
-            envelope.connect(alice).end()
-        ).to.be.revertedWith('Ownable: caller is not the owner');
-        await envelope.connect(owner).end();
-        
-        // expect all streams to be cancelled
         expect(
             (await usdcx.getFlow({
                 sender: envelope.address,
@@ -286,58 +277,49 @@ describe("Envelope Contract", function () {
                 providerOrSigner: owner
             })).flowRate
         ).to.eq('0');
+
         expect(
             (await usdcx.getFlow({
                 sender: envelope.address,
-                receiver: bob.address,
+                receiver: mike.address,
                 providerOrSigner: owner
             })).flowRate
-        ).to.eq('0');
+        ).to.eq(HUNDRED_PER_YEAR);
+
+        // verify mapping changes
+        expect(
+            await envelope.connect(owner).streamRecipients("1")
+        ).to.eq(mike.address);
+
+        // transfer back - verify stream moved
+        await envelope.connect(mike).transferFrom(mike.address, alice.address, 1)
+
         expect(
             (await usdcx.getFlow({
                 sender: envelope.address,
-                receiver: eric.address,
+                receiver: alice.address,
                 providerOrSigner: owner
             })).flowRate
-        ).to.eq('0');
+        ).to.eq(HUNDRED_PER_YEAR);
+
         expect(
             (await usdcx.getFlow({
                 sender: envelope.address,
-                receiver: sunny.address,
-                providerOrSigner: owner
-            })).flowRate
-        ).to.eq('0');
-        expect(
-            (await usdcx.getFlow({
-                sender: envelope.address,
-                receiver: joel.address,
+                receiver: mike.address,
                 providerOrSigner: owner
             })).flowRate
         ).to.eq('0');
 
-        // balance of contract is zeroed out
+        // verify mapping changes
         expect(
-            parseInt(await usdcx.balanceOf({
-                account: envelope.address,
-                providerOrSigner: owner
-            }))
-        ).to.closeTo(
-            ethers.utils.parseUnits("500") - ( HUNDRED_PER_YEAR * SECONDS_IN_YEAR * 5 ),
-            expecationDiffLimit
-        );
+            await envelope.connect(owner).streamRecipients("1")
+        ).to.eq(alice.address);
 
-        expect(
-            parseInt(await usdcx.balanceOf({
-                account: alice.address,
-                providerOrSigner: owner
-            }))
-        ).to.eq(
-            HUNDRED_PER_YEAR * SECONDS_IN_YEAR
-        );
+        await envelope.connect(owner).end();
 
     });
 
-    it("End streams 2 weeks before month duration", async function () {
+    it("End streams 2 weeks before year duration", async function () {
 
         await time.increaseTo( checkPoint + ( SECONDS_IN_YEAR - (SECONDS_IN_DAY*14) ) );
 
@@ -437,6 +419,142 @@ describe("Envelope Contract", function () {
             HUNDRED_PER_YEAR * SECONDS_IN_YEAR
         );
 
+
+    });
+
+    it("Transfer and End streams 2 weeks before month duration and Transfer", async function () {
+
+        await time.increaseTo( checkPoint + ( SECONDS_IN_YEAR - (SECONDS_IN_DAY*14) ) );
+
+        // transfer away
+        await envelope.connect(alice).transferFrom(alice.address, mike.address, 1);
+
+        // transfer again
+        await envelope.connect(mike).transferFrom(mike.address, alex.address, 1);
+
+        // end
+        await envelope.connect(owner).end();
+
+        // expect all streams to be cancelled
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: alice.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: bob.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: eric.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: sunny.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: joel.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: mike.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+        expect(
+            (await usdcx.getFlow({
+                sender: envelope.address,
+                receiver: alex.address,
+                providerOrSigner: owner
+            })).flowRate
+        ).to.eq('0');
+
+        // balance of contract is zeroed out
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: envelope.address,
+                providerOrSigner: owner
+            }))
+        ).to.closeTo(
+            ethers.utils.parseUnits("500") - ( HUNDRED_PER_YEAR * SECONDS_IN_YEAR * 5 ),
+            expecationDiffLimit
+        );
+
+        // alice gets the balance before transfer
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: alice.address,
+                providerOrSigner: owner
+            }))
+        ).to.closeTo(
+            HUNDRED_PER_YEAR * ( SECONDS_IN_YEAR - (SECONDS_IN_DAY*14) ),
+            HUNDRED_PER_YEAR * 2  // 2 seconds of flow rate margin
+        );
+
+        // mike gets the transfered balance
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: alex.address,
+                providerOrSigner: owner
+            }))
+        ).to.closeTo(
+            HUNDRED_PER_YEAR * ( SECONDS_IN_DAY*14 ),
+            HUNDRED_PER_YEAR * 2  // 2 seconds of flow rate margin
+        );
+
+        // other recipient balances are full
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: bob.address,
+                providerOrSigner: owner
+            }))
+        ).to.eq(
+            HUNDRED_PER_YEAR * SECONDS_IN_YEAR
+        );
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: eric.address,
+                providerOrSigner: owner
+            }))
+        ).to.eq(
+            HUNDRED_PER_YEAR * SECONDS_IN_YEAR
+        );
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: sunny.address,
+                providerOrSigner: owner
+            }))
+        ).to.eq(
+            HUNDRED_PER_YEAR * SECONDS_IN_YEAR
+        );
+        expect(
+            parseInt(await usdcx.balanceOf({
+                account: joel.address,
+                providerOrSigner: owner
+            }))
+        ).to.eq(
+            HUNDRED_PER_YEAR * SECONDS_IN_YEAR
+        );
+
+        // transfer back
+        await envelope.connect(mike).transferFrom(mike.address, alice.address, 1);
 
     });
 

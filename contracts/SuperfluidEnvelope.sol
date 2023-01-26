@@ -6,11 +6,15 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { ISuperfluid } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ISuperApp } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperApp.sol";
 
 error NonTransferable();
 error NotEnoughDeposit();
 error AlreadyMinted();
+error OnePerHolder();
+error ReceiverIsSuperApp();
 
 contract SuperfluidEnvelope is Ownable, ERC721 {
 
@@ -22,13 +26,16 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     ISuperToken public rewardToken;
 
-    address[] public streamRecipients;
+    // address[] public streamRecipients;
+    mapping( uint256 => address ) public streamRecipients;
 
     string public metadata;
 
     uint256 public mintTimestamp;
 
     uint256 public tokenIdCounter;
+
+    uint256 public constant NUM_RECIPIENTS = 5;
 
     constructor(
         uint256 _streamDuration,
@@ -43,10 +50,15 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
     ) {
 
         streamDuration = _streamDuration;
-        flowRate = _flowRate;
-        streamRecipients = _streamRecipients;
+        flowRate = _flowRate;        
         rewardToken = _rewardToken;
         metadata = _metadata;
+        
+        streamRecipients[1] = _streamRecipients[0];
+        streamRecipients[2] = _streamRecipients[1];
+        streamRecipients[3] = _streamRecipients[2];
+        streamRecipients[4] = _streamRecipients[3];
+        streamRecipients[5] = _streamRecipients[4];
 
         transferOwnership(_owner);
 
@@ -57,7 +69,7 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
         return (
             rewardToken.balanceOf(address(this)) >=
-            uint(int(flowRate)) * streamDuration * streamRecipients.length
+            uint(int(flowRate)) * streamDuration * 5
         );
 
         
@@ -69,7 +81,7 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         if ( !enoughDeposit() ) revert NotEnoughDeposit();
         if ( mintTimestamp != 0 ) revert AlreadyMinted();
 
-        for (uint i = 0; i < streamRecipients.length; i++) {
+        for (uint i = 1; i < 1+NUM_RECIPIENTS; i++) {
 
             tokenIdCounter += 1;
 
@@ -86,7 +98,7 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
     /// @notice end streams to recipients
     function end() external onlyOwner {
 
-        for (uint i = 0; i < streamRecipients.length; i++) {   
+        for (uint i = 1; i < 1+NUM_RECIPIENTS; i++) {   
 
             if ( rewardToken.getFlowRate(address(this), streamRecipients[i]) != 0 ) {         
 
@@ -98,7 +110,7 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
         if ( block.timestamp < (mintTimestamp + streamDuration) ) {
 
-            for ( uint i = 0; i < streamRecipients.length; i++ ) {
+            for ( uint i = 1; i < 1+NUM_RECIPIENTS; i++ ) {
 
                 rewardToken.transfer(streamRecipients[i], ( ( mintTimestamp + streamDuration ) - block.timestamp ) * uint(int(flowRate)) );
 
@@ -115,14 +127,26 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     } 
 
-    /// @notice NFTs are non-transferrable
-    function _transfer(
+    /// @notice Send rewardToken stream to new holder instead
+    function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 //open zeppelin's batchSize param
     ) internal override {
 
-        revert NonTransferable();
+        if (balanceOf(to) > 0) revert OnePerHolder();
+        if ( ISuperfluid(rewardToken.getHost()).isApp(ISuperApp(to)) ) revert ReceiverIsSuperApp();
+
+        if (from != address(0) && rewardToken.getNetFlowRate(address(this)) != 0) {
+
+            rewardToken.deleteFlow(address(this), from);
+
+            rewardToken.createFlow(to, flowRate);
+
+        }
+
+        streamRecipients[tokenId] = to;
 
     }
 
@@ -133,7 +157,9 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         override(ERC721)
         returns (string memory)
     {
+
         return metadata;
+
     }
 
 }

@@ -14,13 +14,17 @@ const recipients = [
 
 const metadata = "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f"
 
+const owner = "0xc41876DAB61De145093b6aA87417326B24Ae4ECD" // should be sunnyjaycer.eth instead for Polygon mainnet
+
 module.exports = [
     SECONDS_IN_YEAR,
     HUNDRED_PER_MONTH,  // 100 USDCx over month
     goerliUsdcxAddress,
     recipients,
-    metadata
+    metadata,
+    owner
 ];
 
 // npx hardhat verify --network goerli --constructor-args arguments.js [contractaddress]
-// https://goerli.etherscan.io/address/0x9D0A175C86236dAa19cbF41609B7ebad6eC003C8#code
+// https://goerli.etherscan.io/address/0x9D0A175C86236dAa19cbF41609B7ebad6eC003C8#code (non-transferrable)
+// https://goerli.etherscan.io/address/0xE816DcBf51a3F87fbB079a4FBf54837add55E517#code (transferrable)

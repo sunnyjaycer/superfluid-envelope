@@ -4,7 +4,7 @@ const superTokenABI = require("../artifacts/@superfluid-finance/ethereum-contrac
 const envelopeABI = require("../artifacts/contracts/SuperfluidEnvelope.sol/SuperfluidEnvelope.json");
 
 const usdcxAddress = "0x8aE68021f6170E5a766bE613cEA0d75236ECCa9a"
-const envelopeAddress = "0x9D0A175C86236dAa19cbF41609B7ebad6eC003C8"
+const envelopeAddress = "0xE816DcBf51a3F87fbB079a4FBf54837add55E517"
 
 async function main() {
 
@@ -13,7 +13,7 @@ async function main() {
     const envelope = await hre.ethers.getContractAt(envelopeABI.abi, envelopeAddress)
     
     const usdcx = await hre.ethers.getContractAt(superTokenABI.abi, usdcxAddress);
-    console.log(`Initial Envelope USDCx Balance: ${await usdcx.balanceOf(envelope.address)}. You need 500e18 to mint!`);
+    console.log(`Initial Envelope USDCx Balance of ${envelope.address}: ${await usdcx.balanceOf(envelope.address)}. You need 500e18 to mint!`);
 
     // call the mint
     // let mintTx = await envelope.connect(owner).mint();
