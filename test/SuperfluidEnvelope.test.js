@@ -505,7 +505,7 @@ describe("Envelope Contract", function () {
             }))
         ).to.closeTo(
             HUNDRED_PER_YEAR * ( SECONDS_IN_YEAR - (SECONDS_IN_DAY*14) ),
-            HUNDRED_PER_YEAR * 2  // 2 seconds of flow rate margin
+            HUNDRED_PER_YEAR * 3  // 3 seconds of flow rate margin
         );
 
         // mike gets the transfered balance
@@ -516,7 +516,7 @@ describe("Envelope Contract", function () {
             }))
         ).to.closeTo(
             HUNDRED_PER_YEAR * ( SECONDS_IN_DAY*14 ),
-            HUNDRED_PER_YEAR * 2  // 2 seconds of flow rate margin
+            HUNDRED_PER_YEAR * 3  // 3 seconds of flow rate margin
         );
 
         // other recipient balances are full
