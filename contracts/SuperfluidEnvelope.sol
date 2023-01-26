@@ -25,7 +25,6 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     ISuperToken public rewardToken;
 
-    // address[] public streamRecipients;
     mapping( uint256 => address ) public streamRecipients;
 
     string public metadata;
