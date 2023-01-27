@@ -104,10 +104,9 @@ describe("Envelope Contract", function () {
     beforeEach(async () => {
 
       envelope = await envelopeFactory.connect(deployer).deploy(
+        usdcx.address,
         SECONDS_IN_YEAR,
         HUNDRED_PER_YEAR,  // 100 USDCx over month
-        usdcx.address,
-        [alice.address, bob.address, eric.address, sunny.address, joel.address],  // recipients
         "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f",
         owner.address
       );
@@ -122,10 +121,14 @@ describe("Envelope Contract", function () {
 
       // Mint NFTs (also verify onlyOwner)
       await expect(
-        envelope.connect(alice).mint()
+        envelope.connect(alice).mint(
+            [alice.address, bob.address, eric.address, sunny.address, joel.address],  // recipients
+        )
       ).to.be.revertedWith('Ownable: caller is not the owner');
 
-      await envelope.connect(owner).mint();
+      await envelope.connect(owner).mint(
+        [alice.address, bob.address, eric.address, sunny.address, joel.address],  // recipients
+      );
 
       // Get timestamp of creation
     //   if (checkPoint == 0) {
@@ -286,11 +289,6 @@ describe("Envelope Contract", function () {
             })).flowRate
         ).to.eq(HUNDRED_PER_YEAR);
 
-        // verify mapping changes
-        expect(
-            await envelope.connect(owner).streamRecipients("1")
-        ).to.eq(mike.address);
-
         // transfer back - verify stream moved
         await envelope.connect(mike).transferFrom(mike.address, alice.address, 1)
 
@@ -309,11 +307,6 @@ describe("Envelope Contract", function () {
                 providerOrSigner: owner
             })).flowRate
         ).to.eq('0');
-
-        // verify mapping changes
-        expect(
-            await envelope.connect(owner).streamRecipients("1")
-        ).to.eq(alice.address);
 
         await envelope.connect(owner).end();
 
@@ -554,7 +547,7 @@ describe("Envelope Contract", function () {
         );
 
         // transfer back
-        await envelope.connect(mike).transferFrom(mike.address, alice.address, 1);
+        await envelope.connect(alex).transferFrom(alex.address, alice.address, 1);
 
     });
 
