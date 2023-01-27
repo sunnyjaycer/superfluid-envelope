@@ -31,6 +31,8 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     uint256 public tokenIdCounter;
 
+    bool public ended;
+
     constructor(
         ISuperToken _rewardToken,
         uint256 _streamDuration,
@@ -110,6 +112,8 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
         }
 
+        ended = true;
+
     }
 
     /// @notice emergency withdrawal of rewardTokens
@@ -127,10 +131,10 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
         uint256 /*batchSize*/
     ) internal override {
 
-        if (balanceOf(to) > 0) revert OnePerHolder();
+        if ( balanceOf(to) > 0 ) revert OnePerHolder();
         if ( ISuperfluid(rewardToken.getHost()).isApp(ISuperApp(to)) ) revert ReceiverIsSuperApp();
 
-        if (from != address(0) && rewardToken.getNetFlowRate(address(this)) != 0) {
+        if (from != address(0) && !ended) {
 
             rewardToken.deleteFlow(address(this), from);
 
