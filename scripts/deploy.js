@@ -6,8 +6,8 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 
-const SECONDS_IN_YEAR = 60*60*24*365;    // Accounting for potential discrepency with 10 wei margin
-const HUNDRED_PER_MONTH = Math.round(ethers.utils.parseUnits("100") / SECONDS_IN_YEAR).toString();
+const SECONDS_IN_MONTH = 60*60*24*30;    // Accounting for potential discrepency with 10 wei margin
+const HUNDRED_PER_MONTH = Math.round(ethers.utils.parseUnits("100") / SECONDS_IN_MONTH).toString();
 
 const goerliUsdcxAddress = '0x8aE68021f6170E5a766bE613cEA0d75236ECCa9a';
 const recipients = [
@@ -18,7 +18,7 @@ const recipients = [
   '0x26715b05758fC09964733dd4B6a87e084d8Ce69e'
 ];
 
-const metadata = "ipfs://Qmd8b5Gp8FGuvyu5nqZZwUEkKBjdPg6w7qD4oonMqod29f"
+const metadata = "ipfs://QmR64PYq73mnHmuKkcTeLWqnSv2HU5Ce7f3cpM7igrpvLE"
 
 const owner = "0xc41876DAB61De145093b6aA87417326B24Ae4ECD" // should be sunnyjaycer.eth for Polygon mainnet
 
@@ -28,10 +28,9 @@ async function main() {
 
   const Envelope = await hre.ethers.getContractFactory("SuperfluidEnvelope");
   const envelope = await Envelope.deploy(
-    SECONDS_IN_YEAR,
-    HUNDRED_PER_MONTH,  // 100 USDCx over month
     goerliUsdcxAddress,
-    recipients,
+    SECONDS_IN_MONTH,
+    HUNDRED_PER_MONTH,  // 100 USDCx over month
     metadata,
     owner
   );
