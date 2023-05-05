@@ -15,6 +15,19 @@ error AlreadyMinted();
 error OnePerHolder();
 error ReceiverIsSuperApp();
 
+// 1. Fran connects with Polygon through Superfluid's Opensea wallet
+// 2. Fran deploys contract with following parameters:
+    // _rewardToken = 0xCAa7349CEA390F89641fe306D93591f87595dc1F (USDCx)
+    // _streamDuration = 2592000  (seconds in a month)
+    // _flowRate = 38580246913580   (100/month flow rate)
+    // _metadata = "ipfs://QmddAXVmZ2d5n6o6LXCVRtYG5gV3bjmUN1e6Te7MPZxydG"
+    // _owner = Fran's wallet
+// 3. Get Jade to transfer it 500 USDCx (USDCx!!!)
+// 4. Fran will call mint() with these recipients:
+    // streamRecipients = ["0x63b1efc5602c0023bbb373f2350cf34c2e5f8669","0x7fd17ada30306df0ac390fb2f4f96032297750cc","0xc3d1d7e62473589ea934b128ff425a7b932b95d1","0x74b4b8c7cb9a594a6440965f982def10bb9570b9","0xee860e9d8ecbffea3d27eb76e5b923c2e9488acf"]
+// 5. Fran will transferOwnership to the Superfluid multisig
+// 6. After 25 days, Superfluid multisig will call end()
+// 7. If anything goes wrong, Superfluid multisig can call withdraw and recover funds
 
 contract SuperfluidEnvelope is Ownable, ERC721 {
 

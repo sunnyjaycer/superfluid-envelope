@@ -17,10 +17,9 @@ const metadata = "ipfs://QmddAXVmZ2d5n6o6LXCVRtYG5gV3bjmUN1e6Te7MPZxydG"
 const owner = "0x8A396863cD7726B18ebE34651D32B256d6c6De80"
 
 module.exports = [
+  polygonUsdcxAddress,
     SECONDS_IN_MONTH,
     HUNDRED_PER_MONTH,  // 100 USDCx over month
-    polygonUsdcxAddress,
-    recipients,
     metadata,
     owner
 ];
