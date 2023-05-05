@@ -5,7 +5,7 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.17",
+  solidity: "0.8.19",
   networks: {
     hardhat : {
 
@@ -28,8 +28,8 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      goerli: process.env.ETHERSCAN_API_KEY,
-      // polygon: process.env.POLYGONSCAN_API_KEY
+      // goerli: process.env.ETHERSCAN_API_KEY,
+      polygon: process.env.POLYGONSCAN_API_KEY
     },
   },
 };

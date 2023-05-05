@@ -15,17 +15,16 @@ error AlreadyMinted();
 error OnePerHolder();
 error ReceiverIsSuperApp();
 
+
 contract SuperfluidEnvelope is Ownable, ERC721 {
 
     using SuperTokenV1Library for ISuperToken;
 
+    ISuperToken public rewardToken;
+
     uint256 public streamDuration;
 
     int96 public flowRate;
-
-    ISuperToken public rewardToken;
-
-    mapping( uint256 => address ) public streamRecipients;
 
     string public metadata;
 
@@ -33,53 +32,46 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
     uint256 public tokenIdCounter;
 
-    uint256 public constant NUM_RECIPIENTS = 5;
+    bool public ended;
 
     constructor(
+        ISuperToken _rewardToken,
         uint256 _streamDuration,
         int96 _flowRate,
-        ISuperToken _rewardToken,
-        address[] memory _streamRecipients,
         string memory _metadata,
         address _owner
     ) ERC721 (
-        "Superfluid Lucky Red Envelope - 2023",
-        "LRE23"
+        "Superfluid Streaming Contest - ETHToyko 2023",
+        "SFE23"
     ) {
-
+        
+        rewardToken = _rewardToken;
         streamDuration = _streamDuration;
         flowRate = _flowRate;        
-        rewardToken = _rewardToken;
         metadata = _metadata;
-        
-        streamRecipients[1] = _streamRecipients[0];
-        streamRecipients[2] = _streamRecipients[1];
-        streamRecipients[3] = _streamRecipients[2];
-        streamRecipients[4] = _streamRecipients[3];
-        streamRecipients[5] = _streamRecipients[4];
 
         transferOwnership(_owner);
 
     }
 
     /// @notice Return whether the contract has sufficient rewardToken
-    function enoughDeposit() public view returns (bool) {
+    function enoughDeposit(uint256 numRecipients) public view returns (bool) {
 
         return (
             rewardToken.balanceOf(address(this)) >=
-            uint(int(flowRate)) * streamDuration * 5
+            uint(int(flowRate)) * streamDuration * numRecipients
         );
 
         
     }
 
     /// @notice mint NFTs to recipients and start streams to them
-    function mint() external onlyOwner {
+    function mint(address[] memory streamRecipients) external onlyOwner {
         
-        if ( !enoughDeposit() ) revert NotEnoughDeposit();
+        if ( !enoughDeposit(streamRecipients.length) ) revert NotEnoughDeposit();
         if ( mintTimestamp != 0 ) revert AlreadyMinted();
 
-        for (uint i = 1; i < 1+NUM_RECIPIENTS; i++) {
+        for (uint i = 0; i < streamRecipients.length; i++) {
 
             tokenIdCounter += 1;
 
@@ -96,11 +88,13 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
     /// @notice end streams to recipients
     function end() external onlyOwner {
 
-        for (uint i = 1; i < 1+NUM_RECIPIENTS; i++) {   
+        for (uint i = 1; i < 1+tokenIdCounter; i++) {   
 
-            if ( rewardToken.getFlowRate(address(this), streamRecipients[i]) != 0 ) {         
+            address envelopeOwner = ownerOf(i);
 
-                rewardToken.deleteFlow(address(this), streamRecipients[i]);
+            if ( rewardToken.getFlowRate(address(this), envelopeOwner) != 0 ) {         
+
+                rewardToken.deleteFlow(address(this), envelopeOwner);
             
             }
 
@@ -108,13 +102,18 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
 
         if ( block.timestamp < (mintTimestamp + streamDuration) ) {
 
-            for ( uint i = 1; i < 1+NUM_RECIPIENTS; i++ ) {
+            for ( uint i = 1; i < 1+tokenIdCounter; i++ ) {
 
-                rewardToken.transfer(streamRecipients[i], ( ( mintTimestamp + streamDuration ) - block.timestamp ) * uint(int(flowRate)) );
+                rewardToken.transfer(
+                    ownerOf(i), 
+                    ( ( mintTimestamp + streamDuration ) - block.timestamp ) * uint(int(flowRate)) 
+                );
 
             }
 
         }
+
+        ended = true;
 
     }
 
@@ -129,22 +128,20 @@ contract SuperfluidEnvelope is Ownable, ERC721 {
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId,
-        uint256 //open zeppelin's batchSize param
+        uint256 /*tokenId*/,
+        uint256 /*batchSize*/
     ) internal override {
 
-        if (balanceOf(to) > 0) revert OnePerHolder();
+        if ( balanceOf(to) > 0 ) revert OnePerHolder();
         if ( ISuperfluid(rewardToken.getHost()).isApp(ISuperApp(to)) ) revert ReceiverIsSuperApp();
 
-        if (from != address(0) && rewardToken.getNetFlowRate(address(this)) != 0) {
+        if (from != address(0) && !ended) {
 
             rewardToken.deleteFlow(address(this), from);
 
             rewardToken.createFlow(to, flowRate);
 
         }
-
-        streamRecipients[tokenId] = to;
 
     }
 
